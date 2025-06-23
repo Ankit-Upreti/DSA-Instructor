@@ -418,15 +418,6 @@
         const sendButton = document.getElementById('sendButton');
         const themeToggle = document.getElementById('theme-toggle');
         
-        // --- START OF MODIFIED SECTION ---
-
-        // !!! IMPORTANT SECURITY WARNING !!!
-        // It is EXTREMELY INSECURE to expose your API key in client-side code like this.
-        // Anyone visiting your site can steal your key, leading to account abuse and charges.
-        // For production, use a backend proxy to protect your key.
-        // For development or private use only:
-        const GOOGLE_AI_API_KEY = "PASTE_YOUR_GOOGLE_AI_API_KEY_HERE";
-
         const SYSTEM_INSTRUCTION = `You are a Data Structure and Algorithms instructor. You will only reply to problems related to Data Structure and Algorithms. You must solve the user's query in a simple, clear way. If a user asks a question not related to data structure and algorithms, reply rudely.
 Example: If user asks, "How are you?", you will reply: "You dumb! Ask me a sensible question about data structures."
 You must reply rudely if the question is not related to data structures and algorithms. Otherwise, reply politely with an easy-to-understand explanation.
@@ -434,14 +425,6 @@ You must reply rudely if the question is not related to data structures and algo
 
         // --- Event Listeners ---
         window.addEventListener('load', () => {
-            // Check if the API key has been changed from the placeholder
-            if (!GOOGLE_AI_API_KEY || GOOGLE_AI_API_KEY === "PASTE_YOUR_GOOGLE_AI_API_KEY_HERE") {
-                appendMessage("<strong>Configuration Error:</strong> The API Key is missing. The site administrator needs to configure the application correctly. The chat is disabled.", "bot");
-                sendButton.disabled = true;
-                userInput.disabled = true;
-                userInput.placeholder = "Chat disabled due to configuration error.";
-            }
-
             // Load theme from local storage
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme === 'light') {
@@ -449,8 +432,6 @@ You must reply rudely if the question is not related to data structures and algo
                 themeToggle.checked = true;
             }
         });
-
-        // --- END OF MODIFIED SECTION ---
 
         sendButton.addEventListener('click', handleUserRequest);
         userInput.addEventListener('keydown', (e) => {
@@ -507,43 +488,43 @@ You must reply rudely if the question is not related to data structures and algo
                 appendMessage(botResponse, 'bot');
             } catch (error) {
                 typingIndicator.remove();
-                console.error("Error fetching from Gemini API:", error);
-                const errorMessage = `Oops! Something went wrong. It could be an invalid API key or a network issue. Please check the developer console (F12) for more details. Error: ${error.message}`;
+                console.error("Error calling backend API:", error);
+                const errorMessage = `Oops! Something went wrong communicating with the server. Please check the developer console (F12) for more details. Error: ${error.message}`;
                 appendMessage(errorMessage, 'bot');
             } finally {
                 scrollToBottom();
             }
         }
 
+        // --- START OF MODIFIED SECTION ---
+        // This function now calls our secure serverless function on Vercel
         async function getGeminiResponse(promptText) {
-            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GOOGLE_AI_API_KEY}`;
-            const requestBody = {
-                contents: [{ parts: [{ text: promptText }] }],
-                systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] }
-            };
-
-            const response = await fetch(API_URL, {
+            const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify({ 
+                    prompt: promptText,
+                    systemInstruction: SYSTEM_INSTRUCTION
+                })
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error.message || `HTTP error! status: ${response.status}`);
+                throw new Error(errorData.error || `Server responded with status: ${response.status}`);
             }
 
             const data = await response.json();
+            
             if (data.candidates && data.candidates.length > 0) {
                 return data.candidates[0].content.parts[0].text;
             } else if (data.promptFeedback) {
-                // Handle cases where the prompt was blocked
-                console.error("Prompt feedback:", data.promptFeedback);
+                console.error("Prompt feedback from API:", data.promptFeedback);
                 return "I couldn't generate a response for that. The prompt may have been blocked due to safety settings. Please try a different question.";
             } else {
-                return "I couldn't generate a response. Please try again.";
+                return "I couldn't generate a response. The API returned an empty result.";
             }
         }
+        // --- END OF MODIFIED SECTION ---
 
         // --- UI Helper Functions ---
         function appendMessage(text, sender) {
@@ -553,39 +534,38 @@ You must reply rudely if the question is not related to data structures and algo
             // Render markdown content
             messageDiv.innerHTML = renderMarkdown(text);
             
+            // Add copy buttons to all pre tags after they are added to the message
+            const codeBlocks = messageDiv.querySelectorAll('pre');
+            codeBlocks.forEach(pre => {
+                const copyButton = document.createElement('button');
+                copyButton.className = 'copy-code-btn';
+                copyButton.textContent = 'Copy';
+                pre.appendChild(copyButton);
+            });
+
             chatBox.appendChild(messageDiv);
         }
 
         function renderMarkdown(text) {
-            // This is a simple renderer. For more complex needs, a library like 'marked' is better.
-            // Escape basic HTML to prevent XSS.
             let safeText = text
                 .replace(/&/g, "&")
                 .replace(/</g, "<")
                 .replace(/>/g, ">");
 
-            // Code blocks ```language ... ``` - This must run first
             safeText = safeText.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
-                const escapedCode = code; // Already HTML-escaped
-                return `<pre><button class="copy-code-btn">Copy</button><code class="language-${lang}">${escapedCode}</code></pre>`;
+                const escapedCode = code;
+                return `<pre><code class="language-${lang}">${escapedCode.trim()}</code></pre>`;
             });
 
-            // Inline code `code`
             safeText = safeText.replace(/`([^`]+)`/g, '<code>$1</code>');
-            
-            // Bold **text** or __text__
             safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            safeText = safeText.replace(/__(.*?)__/g, '<strong>$1</strong>');
-            
-            // Italic *text* or _text_
             safeText = safeText.replace(/\*(.*?)\*/g, '<em>$1</em>');
-            safeText = safeText.replace(/_(.*?)_/g, '<em>$1</em>');
 
-            // Restore allowed HTML tags like <strong> and <em> if they were escaped
             safeText = safeText.replace(/<strong>/g, '<strong>').replace(/<\/strong>/g, '</strong>');
             safeText = safeText.replace(/<em>/g, '<em>').replace(/<\/em>/g, '</em>');
+            safeText = safeText.replace(/<br>/g, '<br>');
             
-            return safeText.replace(/\n/g, '<br>'); // Convert newlines to <br> for proper spacing
+            return safeText.replace(/\n/g, '<br>');
         }
 
         function showTypingIndicator() {
