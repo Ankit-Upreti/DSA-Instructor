@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSA Instructor AI | Advanced UI</title>
+    <style>
+        /* --- Google Fonts --- */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Fira+Code:wght@400&display=swap');
+
+        /* --- CSS Variables for Theming --- */
+        :root {
+            --gradient-1: #1a2a6c;
+            --gradient-2: #b21f1f;
+            --gradient-3: #fdbb2d;
+            
+            --body-bg-color: #121212;
+            --glass-bg: rgba(22, 22, 34, 0.55);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-color: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent-color: #6a82fb;
+            --accent-hover: #5a72e0;
+            
+            --sidebar-bg: rgba(22, 22, 34, 0.3);
+            --user-msg-bg: #2c3e50;
+            --bot-msg-bg: rgba(44, 44, 68, 0.8);
+            --input-bg: rgba(0, 0, 0, 0.2);
+            --code-bg: #1e1e2e;
+            --code-text-color: #c0c5ce;
+        }
+        
+        body.light-mode {
+            --body-bg-color: #f0f2f5;
+            --glass-bg: rgba(255, 255, 255, 0.5);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --text-color: #1c1e21;
+            --text-secondary: #606770;
+            --accent-color: #5372f0;
+            --accent-hover: #405de6;
+            
+            --sidebar-bg: rgba(255, 255, 255, 0.3);
+            --user-msg-bg: #e7f3ff;
+            --bot-msg-bg: #f0f0f0;
+            --input-bg: rgba(255, 255, 255, 0.5);
+            --code-bg: #f5f5f5;
+            --code-text-color: #333;
+        }
+
+        /* --- Base & Body Styles --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(-45deg, var(--gradient-1), var(--gradient-2), var(--gradient-3));
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* --- Main Layout --- */
+        .main-container {
+            width: 100%;
+            height: 100%;
+            max-width: 1200px;
+            max-height: 90vh;
+            display: flex;
+            border-radius: 20px;
+            overflow: hidden;
+            
+            /* Glassmorphism Effect */
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--glass-border);
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .sidebar-header .logo {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .sidebar-header .logo span {
+            color: var(--accent-color);
+        }
+
+        .sidebar-header p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .sidebar-section {
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-section h3 {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+        }
+
+        .example-prompt {
+            width: 100%;
+            background: none;
+            border: 1px solid var(--glass-border);
+            color: var(--text-color);
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            text-align: left;
+            font-size: 0.9rem;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .example-prompt:hover {
+            background-color: var(--input-bg);
+            border-color: var(--accent-color);
+        }
+        
+        .theme-switcher {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .theme-switcher span {
+             color: var(--text-color);
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
+
+        .switch input { display: none; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: var(--accent-color); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        .sidebar-footer {
+            margin-top: auto;
+            text-align: center;
+        }
+
+        .sidebar-footer a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: color 0.2s;
+        }
+        .sidebar-footer a:hover {
+            color: var(--accent-color);
+        }
+
+        /* --- Chat Container --- */
+        .chat-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 1.25rem;
+            text-align: center;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .chat-header h1 {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .chat-box {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .chat-box::-webkit-scrollbar { width: 8px; }
+        .chat-box::-webkit-scrollbar-track { background: transparent; }
+        .chat-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        body.light-mode .chat-box::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.6;
+            word-wrap: break-word;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .message.user {
+            background: var(--user-msg-bg);
+            color: var(--text-color);
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        body.light-mode .message.user { color: #052c65; }
+
+        .message.bot {
+            background: var(--bot-msg-bg);
+            color: var(--text-color);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        /* Markdown and Code Styling */
+        .message.bot strong { font-weight: 600; color: var(--accent-color); }
+        .message.bot em { font-style: italic; }
+        .message.bot code:not(pre > code) {
+            background-color: var(--code-bg);
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9em;
+        }
+        .message.bot pre {
+            background-color: var(--code-bg);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+            position: relative;
+        }
+        .message.bot pre code {
+            font-family: 'Fira Code', monospace;
+            color: var(--code-text-color);
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+        }
+        .copy-code-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background-color: #444;
+            color: #eee;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 0.8em;
+        }
+        .message.bot pre:hover .copy-code-btn { opacity: 1; }
+        .copy-code-btn:hover { background-color: var(--accent-color); }
+
+
+        .typing { display: flex; align-items: center; gap: 5px; }
+        .typing-dot {
+            width: 8px; height: 8px;
+            background-color: var(--text-secondary);
+            border-radius: 50%;
+            animation: typing-animation 1.2s infinite ease-in-out;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing-animation {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+
+        /* Input Area */
+        .chat-input-area {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--glass-border);
+            background: var(--input-bg);
+        }
+        .chat-input { display: flex; align-items: flex-end; }
+        .chat-input textarea {
+            flex-grow: 1; border: 1px solid var(--glass-border); background: transparent; color: var(--text-color);
+            font-size: 1rem; resize: none; padding: 12px 15px; border-radius: 12px;
+            max-height: 150px; outline: none; transition: border-color 0.2s;
+            font-family: 'Poppins', sans-serif;
+        }
+        .chat-input textarea:focus { border-color: var(--accent-color); }
+        .chat-input textarea::placeholder { color: var(--text-secondary); }
+        .chat-input button {
+            background: var(--accent-color); border: none; color: white;
+            width: 48px; height: 48px; border-radius: 12px;
+            cursor: pointer; margin-left: 10px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+            transition: background-color 0.2s;
+        }
+        .chat-input button:hover { background-color: var(--accent-hover); }
+        .chat-input button:disabled { background-color: var(--text-secondary); cursor: not-allowed; }
+
+        /* Responsive Design */
+        @media (max-width: 900px) {
+            .sidebar { display: none; }
+            .main-container { max-height: none; height: 100%; border-radius: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">DSA<span>.ai</span></div>
+                <p>Your Algorithms Instructor</p>
+            </div>
+            
+            <div class="sidebar-section">
+                <h3>Try these...</h3>
+                <button class="example-prompt">Explain Bubble Sort in simple terms</button>
+                <button class="example-prompt">What is a Hash Table?</button>
+                <button class="example-prompt">Write code for a Binary Search Tree</button>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>Settings</h3>
+                <div class="theme-switcher">
+                    <span>Light Mode</span>
+                    <label class="switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <footer class="sidebar-footer">
+                <a href="https://github.com/your-username" target="_blank">View on GitHub</a>
+            </footer>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <div class="chat-container">
+            <div class="chat-header">
+                <h1>DSA Instructor AI</h1>
+            </div>
+            <div class="chat-box" id="chatBox">
+                <div class="message bot">
+                    Hello! I am your Data Structures and Algorithms instructor. Ask me anything about DSA. <strong>But don't you dare ask me anything else!</strong>
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <div class="chat-input">
+                    <textarea id="userInput" placeholder="Ask about sorting, trees, graphs..." rows="1"></textarea>
+                    <button id="sendButton">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chatBox');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+        const themeToggle = document.getElementById('theme-toggle');
+        
+        let GOOGLE_AI_API_KEY = "";
+        
+        const SYSTEM_INSTRUCTION = `You are a Data Structure and Algorithms instructor. You will only reply to problems related to Data Structure and Algorithms. You must solve the user's query in a simple, clear way. If a user asks a question not related to data structure and algorithms, reply rudely.
+Example: If user asks, "How are you?", you will reply: "You dumb! Ask me a sensible question about data structures."
+You must reply rudely if the question is not related to data structures and algorithms. Otherwise, reply politely with an easy-to-understand explanation.
+**CRITICAL:** Format your answers using markdown. Use **bold** for emphasis, *italics* for notes, and most importantly, use triple backticks (\`\`\`) for all code blocks, specifying the language (e.g., \`\`\`javascript).`;
+
+        // --- Event Listeners ---
+        window.addEventListener('load', () => {
+            // Prompt for API Key
+            GOOGLE_AI_API_KEY = prompt("Please enter your Google AI API Key:");
+            if (!GOOGLE_AI_API_KEY) {
+                appendMessage("API Key not provided. The chat is disabled. Please refresh and enter your key.", "bot");
+                sendButton.disabled = true;
+                userInput.disabled = true;
+            }
+
+            // Load theme from local storage
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+                themeToggle.checked = true;
+            }
+        });
+
+        sendButton.addEventListener('click', handleUserRequest);
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleUserRequest();
+            }
+        });
+
+        document.querySelectorAll('.example-prompt').forEach(button => {
+            button.addEventListener('click', () => {
+                userInput.value = button.textContent;
+                handleUserRequest();
+            });
+        });
+
+        themeToggle.addEventListener('change', () => {
+            document.body.classList.toggle('light-mode');
+            if (document.body.classList.contains('light-mode')) {
+                localStorage.setItem('theme', 'light');
+            } else {
+                localStorage.removeItem('theme');
+            }
+        });
+        
+        chatBox.addEventListener('click', function(event) {
+            if (event.target.classList.contains('copy-code-btn')) {
+                const pre = event.target.closest('pre');
+                const code = pre.querySelector('code');
+                navigator.clipboard.writeText(code.innerText).then(() => {
+                    event.target.textContent = 'Copied!';
+                    setTimeout(() => {
+                        event.target.textContent = 'Copy';
+                    }, 2000);
+                });
+            }
+        });
+
+        // --- Main Functionality ---
+        async function handleUserRequest() {
+            const userMessage = userInput.value.trim();
+            if (!userMessage) return;
+
+            appendMessage(userMessage, 'user');
+            userInput.value = '';
+            userInput.style.height = 'auto';
+
+            const typingIndicator = showTypingIndicator();
+            scrollToBottom();
+
+            try {
+                const botResponse = await getGeminiResponse(userMessage);
+                typingIndicator.remove();
+                appendMessage(botResponse, 'bot');
+            } catch (error) {
+                typingIndicator.remove();
+                console.error("Error fetching from Gemini API:", error);
+                const errorMessage = `Oops! Something went wrong. It could be an invalid API key or a network issue. Please check the developer console (F12) for more details. Error: ${error.message}`;
+                appendMessage(errorMessage, 'bot');
+            } finally {
+                scrollToBottom();
+            }
+        }
+
+        async function getGeminiResponse(promptText) {
+            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GOOGLE_AI_API_KEY}`;
+            const requestBody = {
+                contents: [{ parts: [{ text: promptText }] }],
+                systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] }
+            };
+
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error.message || `HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (data.candidates && data.candidates.length > 0) {
+                return data.candidates[0].content.parts[0].text;
+            } else {
+                return "I couldn't generate a response. The prompt may have been blocked due to safety settings.";
+            }
+        }
+
+        // --- UI Helper Functions ---
+        function appendMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', sender);
+            
+            // Render markdown content
+            messageDiv.innerHTML = renderMarkdown(text);
+            
+            chatBox.appendChild(messageDiv);
+        }
+
+        function renderMarkdown(text) {
+            // Escape HTML to prevent XSS
+            let safeText = text.replace(/</g, "<").replace(/>/g, ">");
+
+            // Code blocks ```language ... ```
+            safeText = safeText.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+                const escapedCode = code; // Already escaped
+                return `<pre><button class="copy-code-btn">Copy</button><code>${escapedCode}</code></pre>`;
+            });
+
+            // Inline code `code`
+            safeText = safeText.replace(/`([^`]+)`/g, '<code>$1</code>');
+            
+            // Bold **text**
+            safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // Italic *text*
+            safeText = safeText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            
+            return safeText;
+        }
+
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.classList.add('message', 'bot', 'typing');
+            typingDiv.innerHTML = `<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>`;
+            chatBox.appendChild(typingDiv);
+            return typingDiv;
+        }
+
+        function scrollToBottom() {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        userInput.addEventListener('input', () => {
+            userInput.style.height = 'auto';
+            userInput.style.height = (userInput.scrollHeight) + 'px';
+        });
+    </script>
+</body>
+</html>
