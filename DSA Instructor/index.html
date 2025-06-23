@@ -418,8 +418,15 @@
         const sendButton = document.getElementById('sendButton');
         const themeToggle = document.getElementById('theme-toggle');
         
-        let GOOGLE_AI_API_KEY = "";
-        
+        // --- START OF MODIFIED SECTION ---
+
+        // !!! IMPORTANT SECURITY WARNING !!!
+        // It is EXTREMELY INSECURE to expose your API key in client-side code like this.
+        // Anyone visiting your site can steal your key, leading to account abuse and charges.
+        // For production, use a backend proxy to protect your key.
+        // For development or private use only:
+        const GOOGLE_AI_API_KEY = "PASTE_YOUR_GOOGLE_AI_API_KEY_HERE";
+
         const SYSTEM_INSTRUCTION = `You are a Data Structure and Algorithms instructor. You will only reply to problems related to Data Structure and Algorithms. You must solve the user's query in a simple, clear way. If a user asks a question not related to data structure and algorithms, reply rudely.
 Example: If user asks, "How are you?", you will reply: "You dumb! Ask me a sensible question about data structures."
 You must reply rudely if the question is not related to data structures and algorithms. Otherwise, reply politely with an easy-to-understand explanation.
@@ -427,12 +434,12 @@ You must reply rudely if the question is not related to data structures and algo
 
         // --- Event Listeners ---
         window.addEventListener('load', () => {
-            // Prompt for API Key
-            GOOGLE_AI_API_KEY = prompt("Please enter your Google AI API Key:");
-            if (!GOOGLE_AI_API_KEY) {
-                appendMessage("API Key not provided. The chat is disabled. Please refresh and enter your key.", "bot");
+            // Check if the API key has been changed from the placeholder
+            if (!GOOGLE_AI_API_KEY || GOOGLE_AI_API_KEY === "PASTE_YOUR_GOOGLE_AI_API_KEY_HERE") {
+                appendMessage("<strong>Configuration Error:</strong> The API Key is missing. The site administrator needs to configure the application correctly. The chat is disabled.", "bot");
                 sendButton.disabled = true;
                 userInput.disabled = true;
+                userInput.placeholder = "Chat disabled due to configuration error.";
             }
 
             // Load theme from local storage
@@ -442,6 +449,8 @@ You must reply rudely if the question is not related to data structures and algo
                 themeToggle.checked = true;
             }
         });
+
+        // --- END OF MODIFIED SECTION ---
 
         sendButton.addEventListener('click', handleUserRequest);
         userInput.addEventListener('keydown', (e) => {
@@ -527,8 +536,12 @@ You must reply rudely if the question is not related to data structures and algo
             const data = await response.json();
             if (data.candidates && data.candidates.length > 0) {
                 return data.candidates[0].content.parts[0].text;
+            } else if (data.promptFeedback) {
+                // Handle cases where the prompt was blocked
+                console.error("Prompt feedback:", data.promptFeedback);
+                return "I couldn't generate a response for that. The prompt may have been blocked due to safety settings. Please try a different question.";
             } else {
-                return "I couldn't generate a response. The prompt may have been blocked due to safety settings.";
+                return "I couldn't generate a response. Please try again.";
             }
         }
 
@@ -544,25 +557,35 @@ You must reply rudely if the question is not related to data structures and algo
         }
 
         function renderMarkdown(text) {
-            // Escape HTML to prevent XSS
-            let safeText = text.replace(/</g, "<").replace(/>/g, ">");
+            // This is a simple renderer. For more complex needs, a library like 'marked' is better.
+            // Escape basic HTML to prevent XSS.
+            let safeText = text
+                .replace(/&/g, "&")
+                .replace(/</g, "<")
+                .replace(/>/g, ">");
 
-            // Code blocks ```language ... ```
+            // Code blocks ```language ... ``` - This must run first
             safeText = safeText.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
-                const escapedCode = code; // Already escaped
-                return `<pre><button class="copy-code-btn">Copy</button><code>${escapedCode}</code></pre>`;
+                const escapedCode = code; // Already HTML-escaped
+                return `<pre><button class="copy-code-btn">Copy</button><code class="language-${lang}">${escapedCode}</code></pre>`;
             });
 
             // Inline code `code`
             safeText = safeText.replace(/`([^`]+)`/g, '<code>$1</code>');
             
-            // Bold **text**
+            // Bold **text** or __text__
             safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            safeText = safeText.replace(/__(.*?)__/g, '<strong>$1</strong>');
             
-            // Italic *text*
+            // Italic *text* or _text_
             safeText = safeText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            safeText = safeText.replace(/_(.*?)_/g, '<em>$1</em>');
+
+            // Restore allowed HTML tags like <strong> and <em> if they were escaped
+            safeText = safeText.replace(/<strong>/g, '<strong>').replace(/<\/strong>/g, '</strong>');
+            safeText = safeText.replace(/<em>/g, '<em>').replace(/<\/em>/g, '</em>');
             
-            return safeText;
+            return safeText.replace(/\n/g, '<br>'); // Convert newlines to <br> for proper spacing
         }
 
         function showTypingIndicator() {
